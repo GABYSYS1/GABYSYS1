@@ -25,10 +25,19 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def welcome_message():
-    print_colored("Running 'Vertex.py'", "36")  # Cyan text
-    user_name = os.getlogin()
-    user_ip = subprocess.check_output(['nslookup', 'myip.opendns.com', 'resolver1.opendns.com']).decode().split('Address: ')[-1].strip()
-    print_colored(f"Hello {user_name}! Or should I call you : {user_ip}", "37")  # White text
+    clear_screen()
+    print_colored(r"""
+  _    __     ______  _______  __  __ 
+ | |  / /    |  ____||__   __||  \/  |
+ | | / /     | |__      | |   | \  / |
+ | |/ /      |  __|     | |   | |\/| |
+ |   <       | |____    | |   | |  | |
+ |_|\_\      |______|   |_|   |_|  |_|        
+    """, "36")  # Cyan text for VERTEX in ASCII art
+    print_colored("Made by Fraise Le BG", "35")  # Magenta text for credits
+    print_colored("\nMy socials:", "37")  # White text
+    print_colored("Youtube: https://www.youtube.com/@PWEBIDUOS", "37")
+    print_colored("Discord: Discord.com/", "37")
 
 def list_files_by_type(extensions):
     """List files by specific extensions."""
@@ -48,6 +57,7 @@ def list_files_by_type(extensions):
     return files
 
 def list_all_files():
+    clear_screen()
     print_colored("\nListing all Word, PowerPoint, and Excel files on your PC...", "32")
     files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
     if files:
@@ -55,8 +65,10 @@ def list_all_files():
             print(f"{idx}. {file}")
     else:
         print_colored("No Word, PowerPoint, or Excel files found.", "31")
+    input("\nPress Enter to return to the menu...")
 
 def open_file():
+    clear_screen()
     print_colored("\nSelect a file to open (only Word, PowerPoint, and Excel files):", "32")
     files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
     if files:
@@ -75,8 +87,10 @@ def open_file():
             print_colored("Invalid input. Please enter a number.", "31")
     else:
         print_colored("No Word, PowerPoint, or Excel files found to open.", "31")
+    input("\nPress Enter to return to the menu...")
 
 def backup_files():
+    clear_screen()
     print_colored("\nSelect files to backup (only Word, PowerPoint, and Excel files):", "32")
     files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
     if files:
@@ -105,6 +119,7 @@ def backup_files():
             print_colored("Invalid input. Please enter valid numbers.", "31")
     else:
         print_colored("No Word, PowerPoint, or Excel files found to backup.", "31")
+    input("\nPress Enter to return to the menu...")
 
 def send_discord_message(message):
     """Send a message to a Discord channel using a bot."""
@@ -123,11 +138,64 @@ def send_discord_message(message):
         print_colored(f"Failed to send message to Discord: {response.status_code} - {response.text}", "31")
 
 def list_processes():
-    print_colored("\nListing all running processes with PID...", "32")
-    for proc in psutil.process_iter(['pid', 'name']):
-        print(f"PID: {proc.info['pid']} - Name: {proc.info['name']}")
+    clear_screen()
+    print_colored("\n========================", "32")
+    print_colored("   List Processes Menu  ", "32")
+    print_colored("========================", "32")
+    print("1. Sort by Name (A-Z)")
+    print("2. Sort by Memory Usage (Descending)")
+    print("3. Back to Menu")
+    print_colored("========================", "32")
+
+    sort_choice = input("Enter your choice (1-3): ")
+
+    if sort_choice == '1':
+        sort_by_name()
+    elif sort_choice == '2':
+        sort_by_memory_usage()
+    elif sort_choice == '3':
+        return
+    else:
+        print_colored("Invalid choice. Please try again.", "31")
+        input("\nPress Enter to continue...")
+        list_processes()
+
+def sort_by_name():
+    clear_screen()
+    print_colored("\n========================", "32")
+    print_colored("Processes Sorted by Name (A-Z)", "32")
+    print_colored("========================", "32")
+    print(f"{'Name':<25} {'PID':<10} {'Memory Usage':<15}")
+    print(f"{'-'*25} {'-'*10} {'-'*15}")
+
+    processes = [(proc.info['name'], proc.info['pid'], proc.info['memory_info'].rss) for proc in psutil.process_iter(['name', 'pid', 'memory_info'])]
+    sorted_processes = sorted(processes, key=lambda x: x[0].lower())
+
+    for process in sorted_processes:
+        name, pid, memory = process
+        print(f"{name:<25} {pid:<10} {memory / 1024 / 1024:.2f} MB")
+
+    input("\nPress Enter to return to the menu...")
+
+def sort_by_memory_usage():
+    clear_screen()
+    print_colored("\n========================", "32")
+    print_colored("Processes Sorted by Memory Usage (Descending)", "32")
+    print_colored("========================", "32")
+    print(f"{'Name':<25} {'PID':<10} {'Memory Usage':<15}")
+    print(f"{'-'*25} {'-'*10} {'-'*15}")
+
+    processes = [(proc.info['name'], proc.info['pid'], proc.info['memory_info'].rss) for proc in psutil.process_iter(['name', 'pid', 'memory_info'])]
+    sorted_processes = sorted(processes, key=lambda x: x[2], reverse=True)
+
+    for process in sorted_processes:
+        name, pid, memory = process
+        print(f"{name:<25} {pid:<10} {memory / 1024 / 1024:.2f} MB")
+
+    input("\nPress Enter to return to the menu...")
 
 def end_process():
+    clear_screen()
     pid = input("Enter the PID of the process to end (or type 'back' to return): ")
     if pid.lower() == 'back':
         return
@@ -136,8 +204,10 @@ def end_process():
         print_colored(f"Process {pid} terminated successfully.", "32")
     except Exception as e:
         print_colored(f"Error terminating process: {e}", "31")
+    input("\nPress Enter to return to the menu...")
 
 def run_command():
+    clear_screen()
     command = input("Enter the Windows command to run (or type 'back' to return): ")
     if command.lower() == 'back':
         return
@@ -146,8 +216,10 @@ def run_command():
         print(output.decode())
     except subprocess.CalledProcessError as e:
         print_colored(f"Error: {e.output.decode()}", "31")
+    input("\nPress Enter to return to the menu...")
 
 def show_websites():
+    clear_screen()
     websites = {
         1: "https://www.google.com",
         2: "https://www.youtube.com",
@@ -202,15 +274,19 @@ def show_websites():
             print_colored("Invalid choice. Please try again.", "31")
     except ValueError:
         print_colored("Invalid input. Please enter a number.", "31")
+    input("\nPress Enter to return to the menu...")
 
 def system_info():
+    clear_screen()
     try:
         output = subprocess.check_output('systeminfo', shell=True)
         print(output.decode())
     except Exception as e:
         print_colored(f"Error retrieving system info: {e}", "31")
+    input("\nPress Enter to return to the menu...")
 
 def change_password():
+    clear_screen()
     new_password = input("Enter your new password: ")
     if new_password:
         command = f"net user {os.getlogin()} {new_password}"
@@ -219,8 +295,10 @@ def change_password():
             print_colored("Password changed successfully.", "32")
         except subprocess.CalledProcessError:
             print_colored("Failed to change password. Ensure you're running the script as a regular user and not an administrator.", "31")
+    input("\nPress Enter to return to the menu...")
 
 def id_resolver():
+    clear_screen()
     """Resolve Discord user ID to a username using Selenium to interact with discord.id."""
     discord_user_id = input("Enter the Discord user ID to resolve: ")
     
@@ -259,8 +337,8 @@ def id_resolver():
         driver.quit()
 
 def main_menu():
-    clear_screen()
     while True:
+        welcome_message()  # Display the welcome message and ASCII art each time the menu is shown
         print_colored("\n========================", "32")
         print_colored("      Command Menu      ", "32")
         print_colored("========================", "32")
@@ -303,5 +381,4 @@ def main_menu():
             print_colored("Invalid choice. Please try again.", "31")
 
 if __name__ == "__main__":
-    welcome_message()
     main_menu()
