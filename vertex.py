@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import shutil
 import psutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -24,29 +25,75 @@ def welcome_message():
     user_ip = subprocess.check_output(['nslookup', 'myip.opendns.com', 'resolver1.opendns.com']).decode().split('Address: ')[-1].strip()
     print_colored(f"Hello {user_name}! Or should I call you : {user_ip}", "37")  # White text
 
-def list_all_files():
-    print_colored("\nListing all files on your PC...", "32")
+def list_files_by_type(extensions):
+    """List files by specific extensions."""
     directories = [
         os.path.expanduser('~\\Desktop'),
         os.path.expanduser('~\\Documents'),
-        os.path.expanduser('~\\Downloads'),
-        os.path.expanduser('~\\Music'),
-        os.path.expanduser('~\\Pictures'),
-        os.path.expanduser('~\\Videos'),
-        'C:\\Users\\Public\\Desktop',
-        'C:\\Program Files',
-        'C:\\Program Files (x86)',
-        'C:\\Windows\\System32'
+        os.path.expanduser('~\\Downloads')
     ]
-    count = 0
+    
+    files = []
     for directory in directories:
         if os.path.exists(directory):
-            for root, dirs, files in os.walk(directory):
-                for file in files:
-                    count += 1
-                    print(f"{count}. {os.path.join(root, file)}")
-    if count == 0:
-        print_colored("No files found.", "31")
+            for root, dirs, filenames in os.walk(directory):
+                for filename in filenames:
+                    if filename.endswith(extensions):
+                        files.append(os.path.join(root, filename))
+    return files
+
+def list_all_files():
+    print_colored("\nListing all Word, PowerPoint, and Excel files on your PC...", "32")
+    files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
+    if files:
+        for idx, file in enumerate(files, start=1):
+            print(f"{idx}. {file}")
+    else:
+        print_colored("No Word, PowerPoint, or Excel files found.", "31")
+
+def open_file():
+    print_colored("\nSelect a file to open (only Word, PowerPoint, and Excel files):", "32")
+    files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
+    if files:
+        for idx, file in enumerate(files, start=1):
+            print(f"{idx}. {file}")
+        choice = input("Enter the number of the file to open (or type 'back' to return): ")
+        if choice.lower() == 'back':
+            return
+        try:
+            file_index = int(choice) - 1
+            if 0 <= file_index < len(files):
+                os.startfile(files[file_index])
+            else:
+                print_colored("Invalid choice. Please try again.", "31")
+        except ValueError:
+            print_colored("Invalid input. Please enter a number.", "31")
+    else:
+        print_colored("No Word, PowerPoint, or Excel files found to open.", "31")
+
+def backup_files():
+    print_colored("\nSelect a file to backup (only Word, PowerPoint, and Excel files):", "32")
+    files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
+    if files:
+        for idx, file in enumerate(files, start=1):
+            print(f"{idx}. {file}")
+        choice = input("Enter the number of the file to backup (or type 'back' to return): ")
+        if choice.lower() == 'back':
+            return
+        try:
+            file_index = int(choice) - 1
+            if 0 <= file_index < len(files):
+                desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+                backup_folder = os.path.join(desktop_path, 'Vertex_Backups')
+                os.makedirs(backup_folder, exist_ok=True)
+                shutil.copy2(files[file_index], backup_folder)
+                print_colored(f"File backed up successfully to {backup_folder}.", "32")
+            else:
+                print_colored("Invalid choice. Please try again.", "31")
+        except ValueError:
+            print_colored("Invalid input. Please enter a number.", "31")
+    else:
+        print_colored("No Word, PowerPoint, or Excel files found to backup.", "31")
 
 def list_processes():
     print_colored("\nListing all running processes with PID...", "32")
@@ -137,31 +184,14 @@ def system_info():
         print_colored(f"Error retrieving system info: {e}", "31")
 
 def change_password():
-    choice = input("1. Change your own password\n2. Change another user's password (Admin required)\nEnter your choice (1-2): ")
-    if choice == '1':
-        new_password = input("Enter your new password: ")
-        if new_password:
-            command = f"net user {os.getlogin()} {new_password}"
-            try:
-                subprocess.check_output(command, shell=True)
-                print_colored("Password changed successfully.", "32")
-            except subprocess.CalledProcessError:
-                print_colored("Failed to change password. Are you running as an admin?", "31")
-    elif choice == '2':
-        user_list = subprocess.check_output('net user', shell=True).decode()
-        print(user_list)
-        user = input("Enter the username to change password for: ")
-        new_password = input(f"Enter the new password for {user}: ")
-        if new_password:
-            command = f"net user {user} {new_password}"
-            try:
-                subprocess.check_output(command, shell=True)
-                print_colored("Password changed successfully.", "32")
-            except subprocess.CalledProcessError:
-                print_colored("Failed to change password. Ensure you have administrative privileges.", "31")
-
-def backup_files():
-    print_colored("Backing up files... (Not Implemented)", "33")
+    new_password = input("Enter your new password: ")
+    if new_password:
+        command = f"net user {os.getlogin()} {new_password}"
+        try:
+            subprocess.check_output(command, shell=True)
+            print_colored("Password changed successfully.", "32")
+        except subprocess.CalledProcessError:
+            print_colored("Failed to change password. Ensure you're running the script as a regular user and not an administrator.", "31")
 
 def id_resolver():
     """Resolve Discord user ID to a username using Selenium to interact with discord.id."""
@@ -230,7 +260,7 @@ def main_menu():
         elif choice == '4':
             show_websites()
         elif choice == '5':
-            list_all_files()
+            open_file()
         elif choice == '6':
             system_info()
         elif choice == '7':
