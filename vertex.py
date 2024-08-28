@@ -22,7 +22,7 @@ def welcome_message():
     print_colored("Running 'Vertex.py'", "36")  # Cyan text
     user_name = os.getlogin()
     user_ip = subprocess.check_output(['nslookup', 'myip.opendns.com', 'resolver1.opendns.com']).decode().split('Address: ')[-1].strip()
-    print_colored(f"Hello {user_name}! Your IP: {user_ip}", "37")  # White text
+    print_colored(f"Hello {user_name}! Or should I call you : {user_ip}", "37")  # White text
 
 def list_all_files():
     print_colored("\nListing all files on your PC...", "32")
@@ -178,7 +178,7 @@ def id_resolver():
         driver.get("https://discord.id/")
 
         # Wait for the input box to be available
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 20)
         input_box = wait.until(EC.presence_of_element_located((By.ID, 'userid')))
 
         # Enter the Discord user ID
