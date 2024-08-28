@@ -24,8 +24,8 @@ def clear_screen():
     """Clear the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def welcome_message():
-    clear_screen()
+def display_header():
+    """Display the header with ASCII art and instructions."""
     print_colored(r"""
   _    __     ______  _______  __  __ 
  | |  / /    |  ____||__   __||  \/  |
@@ -34,10 +34,30 @@ def welcome_message():
  |   <       | |____    | |   | |  | |
  |_|\_\      |______|   |_|   |_|  |_|        
     """, "36")  # Cyan text for VERTEX in ASCII art
-    print_colored("Made by Fraise Le BG", "35")  # Magenta text for credits
-    print_colored("\nMy socials:", "37")  # White text
-    print_colored("Youtube: https://www.youtube.com/@PWEBIDUOS", "37")
-    print_colored("Discord: Discord.com/", "37")
+
+def display_menu():
+    """Display the main menu."""
+    print_colored("\n========================", "32")  # Green text for section separator
+    print_colored("      Command Menu      ", "33")  # Yellow text for menu title
+    print_colored("========================", "32")
+    print_colored("1. List Processes", "34")  # Blue text for menu items
+    print_colored("2. End Process", "34")
+    print_colored("3. Run Windows Command", "34")
+    print_colored("4. Show Websites", "34")
+    print_colored("5. Open File", "34")
+    print_colored("6. System Information", "34")
+    print_colored("7. Backup Files", "34")
+    print_colored("8. Change Password", "34")
+    print_colored("9. ID Resolver", "34")
+    print_colored("10. Exit", "34")
+    print_colored("========================", "32")
+
+def display_socials():
+    """Display social media information below the menu."""
+    print_colored("\nMy socials:", "35")  # Magenta text for "My socials:"
+    print_colored("Made by Fraise Le BG", "35")
+    print_colored("Youtube: https://www.youtube.com/@PWEBIDUOS", "35")
+    print_colored("Discord: Discord.com/", "35")
 
 def list_files_by_type(extensions):
     """List files by specific extensions."""
@@ -338,21 +358,10 @@ def id_resolver():
 
 def main_menu():
     while True:
-        welcome_message()  # Display the welcome message and ASCII art each time the menu is shown
-        print_colored("\n========================", "32")
-        print_colored("      Command Menu      ", "32")
-        print_colored("========================", "32")
-        print("1. List Processes")
-        print("2. End Process")
-        print("3. Run Windows Command")
-        print("4. Show Websites")
-        print("5. Open File")
-        print("6. System Information")
-        print("7. Backup Files")
-        print("8. Change Password")
-        print("9. ID Resolver")
-        print("10. Exit")
-        print_colored("========================", "32")
+        clear_screen()
+        display_header()
+        display_menu()
+        display_socials()
         
         choice = input("Enter your choice (1-10): ")
         
