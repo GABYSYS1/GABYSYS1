@@ -4,7 +4,6 @@ import socket
 import time
 import subprocess
 import psutil
-import requests
 
 # Function to print colored text in CMD
 def print_colored(text, color_code):
@@ -14,20 +13,11 @@ def clear_screen():
     """Clear the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
-# Welcome message
 def welcome_message():
+    print_colored("Running 'Vertex.py'", "36")  # Cyan text
     user_name = os.getlogin()
-    user_ip = requests.get('https://api.ipify.org').text
+    user_ip = socket.gethostbyname(socket.gethostname())
     print_colored(f"Hello {user_name}! Your IP: {user_ip}", "37")  # White text
-
-# Install required packages
-def install_packages():
-    print_colored("Installing Packages...", "32")  # Green text
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "psutil", "--quiet"])
-    except Exception as e:
-        print_colored(f"Error installing packages: {e}", "31")  # Red text
-        sys.exit(1)
 
 def list_all_files():
     print_colored("\nListing all files on your PC...", "32")
@@ -85,7 +75,6 @@ def show_websites():
         3: "https://www.facebook.com",
         4: "https://www.amazon.com",
         5: "https://www.wikipedia.org"
-        # Add more websites as needed
     }
     print_colored("\nAvailable websites to open:", "32")
     for num, site in websites.items():
@@ -136,16 +125,6 @@ def change_password():
 def backup_files():
     print_colored("Backing up files... (Not Implemented)", "33")
 
-def loading_screen():
-    print_colored("Getting dependencies...", "32")
-    time.sleep(1)
-    print_colored("Installing vertex...", "32")
-    time.sleep(1)
-    print_colored("Installed successfully.", "32")
-    time.sleep(1)
-    print_colored("Launching vertex.", "35")
-    time.sleep(1)
-
 def main_menu():
     clear_screen()
     while True:
@@ -189,6 +168,4 @@ def main_menu():
 
 if __name__ == "__main__":
     welcome_message()
-    install_packages()
-    loading_screen()
     main_menu()
