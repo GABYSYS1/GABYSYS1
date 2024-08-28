@@ -6,6 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Function to print colored text in CMD
@@ -175,19 +177,22 @@ def id_resolver():
         # Navigate to discord.id
         driver.get("https://discord.id/")
 
+        # Wait for the input box to be available
+        wait = WebDriverWait(driver, 10)
+        input_box = wait.until(EC.presence_of_element_located((By.ID, 'userid')))
+
         # Enter the Discord user ID
-        input_box = driver.find_element(By.ID, 'userid')
         input_box.clear()
         input_box.send_keys(discord_user_id)
         input_box.send_keys(Keys.RETURN)
 
         # Wait for the result to appear
-        driver.implicitly_wait(5)
+        wait.until(EC.presence_of_element_located((By.ID, 'userTag')))
 
         # Extract the username
         result = driver.find_element(By.ID, 'userTag')
-        if result:
-            username = result.text.strip()
+        username = result.text.strip()
+        if username:
             print_colored(f"Discord Username: {username}", "32")
         else:
             print_colored("No results found. Please check the Discord ID.", "31")
