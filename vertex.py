@@ -2,8 +2,11 @@ import os
 import sys
 import subprocess
 import psutil
-import requests
-from bs4 import BeautifulSoup  # For parsing HTML content
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Function to print colored text in CMD
 def print_colored(text, color_code):
@@ -159,25 +162,39 @@ def backup_files():
     print_colored("Backing up files... (Not Implemented)", "33")
 
 def id_resolver():
-    """Resolve Discord user ID to a username using discord.id."""
+    """Resolve Discord user ID to a username using Selenium to interact with discord.id."""
     discord_user_id = input("Enter the Discord user ID to resolve: ")
-    url = f"https://discord.id/?prefill={discord_user_id}"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-    }
+    
+    # Setup Selenium WebDriver
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')  # Run in headless mode (no browser UI)
+    options.add_argument('--disable-gpu')
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
     try:
-        response = requests.get(url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        result = soup.find('span', {'id': 'result_display'})
-        
+        # Navigate to discord.id
+        driver.get("https://discord.id/")
+
+        # Enter the Discord user ID
+        input_box = driver.find_element(By.ID, 'userid')
+        input_box.clear()
+        input_box.send_keys(discord_user_id)
+        input_box.send_keys(Keys.RETURN)
+
+        # Wait for the result to appear
+        driver.implicitly_wait(5)
+
+        # Extract the username
+        result = driver.find_element(By.ID, 'userTag')
         if result:
-            username = result.get_text(strip=True)
+            username = result.text.strip()
             print_colored(f"Discord Username: {username}", "32")
         else:
             print_colored("No results found. Please check the Discord ID.", "31")
     except Exception as e:
         print_colored(f"Error resolving Discord ID: {e}", "31")
+    finally:
+        driver.quit()
 
 def main_menu():
     clear_screen()
