@@ -3,6 +3,7 @@ import sys
 import subprocess
 import shutil
 import psutil
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -10,6 +11,10 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Discord bot token and channel ID
+DISCORD_BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'
+DISCORD_CHANNEL_ID = 'YOUR_CHANNEL_ID_HERE'
 
 # Function to print colored text in CMD
 def print_colored(text, color_code):
@@ -72,28 +77,50 @@ def open_file():
         print_colored("No Word, PowerPoint, or Excel files found to open.", "31")
 
 def backup_files():
-    print_colored("\nSelect a file to backup (only Word, PowerPoint, and Excel files):", "32")
+    print_colored("\nSelect files to backup (only Word, PowerPoint, and Excel files):", "32")
     files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
     if files:
         for idx, file in enumerate(files, start=1):
             print(f"{idx}. {file}")
-        choice = input("Enter the number of the file to backup (or type 'back' to return): ")
-        if choice.lower() == 'back':
+        choices = input("Enter the numbers of the files to backup separated by commas (e.g., 1,2,3) or type 'back' to return: ")
+        if choices.lower() == 'back':
             return
         try:
-            file_index = int(choice) - 1
-            if 0 <= file_index < len(files):
-                desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-                backup_folder = os.path.join(desktop_path, 'Vertex_Backups')
-                os.makedirs(backup_folder, exist_ok=True)
-                shutil.copy2(files[file_index], backup_folder)
-                print_colored(f"File backed up successfully to {backup_folder}.", "32")
-            else:
-                print_colored("Invalid choice. Please try again.", "31")
+            selected_indices = [int(choice.strip()) - 1 for choice in choices.split(',')]
+            desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+            backup_folder = os.path.join(desktop_path, 'Vertex_Backups')
+            os.makedirs(backup_folder, exist_ok=True)
+            
+            for file_index in selected_indices:
+                if 0 <= file_index < len(files):
+                    shutil.copy2(files[file_index], backup_folder)
+                    print_colored(f"File {files[file_index]} backed up successfully.", "32")
+                else:
+                    print_colored(f"Invalid choice: {file_index + 1}. Skipping.", "31")
+
+            # Send a message to Discord after backing up files
+            send_discord_message(f"User '{os.getlogin()}' backed up files to '{backup_folder}'.")
+
         except ValueError:
-            print_colored("Invalid input. Please enter a number.", "31")
+            print_colored("Invalid input. Please enter valid numbers.", "31")
     else:
         print_colored("No Word, PowerPoint, or Excel files found to backup.", "31")
+
+def send_discord_message(message):
+    """Send a message to a Discord channel using a bot."""
+    url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
+    headers = {
+        "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "content": message
+    }
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        print_colored("Notification sent to Discord.", "32")
+    else:
+        print_colored(f"Failed to send message to Discord: {response.status_code} - {response.text}", "31")
 
 def list_processes():
     print_colored("\nListing all running processes with PID...", "32")
