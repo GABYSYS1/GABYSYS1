@@ -13,12 +13,17 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import ctypes
 from colorama import Fore, Style, init
+from docx import Document
+from datetime import datetime
 
 init(autoreset=True)  # Automatically reset colors after each print
 
 # Discord bot token and channel ID
 DISCORD_BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'
 DISCORD_CHANNEL_ID = 'YOUR_CHANNEL_ID_HERE'
+
+# Word document for logging lookups
+DOCX_FILENAME = "lookup_results.docx"
 
 def print_colored(text, color):
     """Print text in the specified color."""
@@ -357,12 +362,30 @@ def id_resolver():
         username = result.text.strip()
         if username:
             print_colored(f"Discord Username: {username}", Fore.GREEN)
+            log_to_word(discord_user_id, username)  # Log the result to a Word document
         else:
             print_colored("No results found. Please check the Discord ID.", Fore.RED)
     except Exception as e:
         print_colored(f"Error resolving Discord ID: {e}", Fore.RED)
     finally:
         driver.quit()
+
+def log_to_word(discord_id, username):
+    """Log the Discord ID lookup result to a Word document."""
+    if not os.path.exists(DOCX_FILENAME):
+        doc = Document()
+        doc.add_heading('Discord ID Lookup Results', 0)
+    else:
+        doc = Document(DOCX_FILENAME)
+    
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    doc.add_paragraph(f"Lookup Time: {now}")
+    doc.add_paragraph(f"Discord ID: {discord_id}")
+    doc.add_paragraph(f"Discord Username: {username}")
+    doc.add_paragraph("-------------------------------")
+    
+    doc.save(DOCX_FILENAME)
+    print_colored(f"Result logged to {DOCX_FILENAME}.", Fore.GREEN)
 
 def disk_usage_info():
     clear_screen()
