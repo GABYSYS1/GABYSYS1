@@ -2,8 +2,8 @@
 setlocal
 
 :: Define the URL for your Python script
-set "PYTHON_SCRIPT_URL=https://raw.githubusercontent.com/GABYSYS1/GABYSYS1/main/Start.py"
-set "PYTHON_SCRIPT_NAME=start.py"
+set "PYTHON_SCRIPT_URL=https://raw.githubusercontent.com/GABYSYS1/GABYSYS1/main/vertex.py"
+set "PYTHON_SCRIPT_NAME=vertex.py"
 
 :: Check if Python is installed
 python --version >nul 2>&1
@@ -30,7 +30,7 @@ python -m ensurepip --upgrade
 python -m pip install --upgrade pip
 
 :: List of required Python packages
-set "packages=requests beautifulsoup4 selenium webdriver-manager psutil colorama python-docx"
+set "packages=requests beautifulsoup4 selenium webdriver-manager psutil colorama watchdog"
 
 :: Install each package
 for %%p in (%packages%) do (
@@ -52,9 +52,6 @@ if %errorlevel% neq 0 (
     pause
     exit /b
 )
-
-:: Clear the screen to reset the chat
-cls
 
 :: Run the Python script after installing everything
 echo Running %PYTHON_SCRIPT_NAME%...
