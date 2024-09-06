@@ -85,6 +85,15 @@ def update_user_data(username, pc_name, public_ip, local_ip, vpn_status, antivir
     conn.commit()
     conn.close()
 
+def clear_user_data():
+    """Clear all user data from the table without deleting the table."""
+    conn = sqlite3.connect(DB_FILENAME)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM user_data')
+    conn.commit()
+    conn.close()
+    print("All user data has been cleared from the database.")
+
 def get_public_ip():
     """Get the public IP address."""
     try:
